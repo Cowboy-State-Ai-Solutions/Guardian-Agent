@@ -1,0 +1,357 @@
+# Guardian Agent Quick Start Guide
+
+Get up and running with Guardian Agent in 5 minutes! This guide covers installation, basic usage, and integration with popular frameworks.
+
+## 🚀 Installation
+
+### Option 1: pip (Recommended)
+
+```bash
+pip install guardian-agent
+```
+
+### Option 2: From Source
+
+```bash
+git clone https://github.com/cowboy-state-ai-solutions/guardian-agent.git
+cd guardian-agent
+pip install -e .
+```
+
+### Option 3: Docker
+
+```bash
+docker run -p 8080:8080 guardianagent/guardian-agent:latest
+```
+
+## 🎯 Basic Usage
+
+### Your First Detection
+
+```python
+from guardian_agent import detect
+
+# Check any text for hallucinations
+text = "The iPhone 15 was released in September 2023"
+result = detect(text)
+
+print(f"Is hallucination: {result.is_hallucination}")
+print(f"Confidence: {result.confidence:.2%}")
+print(f"Explanation: {result.explanation}")
+```
+
+### Using the Guardian Agent Class
+
+```python
+from guardian_agent import GuardianAgent
+
+# Initialize with detection mode
+agent = GuardianAgent(mode="detection")
+
+# Analyze text
+text = "Abraham Lincoln was the first president of the United States"
+result = agent.analyze(text)
+
+if result.is_hallucination:
+    print(f"⚠️ Hallucination detected!")
+    print(f"Type: {result.hallucination_type}")
+    print(f"Severity: {result.severity}")
+    
+    # Get suggestions for correction
+    if result.suggestions:
+        print(f"Suggestion: {result.suggestions[0]}")
+```
+
+## 🔌 Framework Integrations
+
+### OpenAI Integration
+
+```python
+from guardian_agent.integrations import guardian_openai
+import openai
+
+# Wrap your OpenAI client
+client = guardian_openai(openai.Client())
+
+# Use as normal - Guardian protects automatically
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[
+        {"role": "user", "content": "When was the iPhone 15 released?"}
+    ],
+    guardian_mode="prevention"  # Prevents hallucinations
+)
+
+print(response.choices[0].message.content)
+# Output will be factually accurate or indicate uncertainty
+```
+
+### LangChain Integration
+
+```python
+from guardian_agent.integrations import GuardianLangChain
+from langchain.llms import OpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+
+# Create your chain
+llm = OpenAI(temperature=0.7)
+prompt = PromptTemplate(
+    input_variables=["topic"],
+    template="Tell me about {topic}"
+)
+chain = LLMChain(llm=llm, prompt=prompt)
+
+# Add Guardian protection
+protected_chain = GuardianLangChain(chain, mode="correction")
+
+# Run with automatic correction
+result = protected_chain.run("the history of quantum computing")
+print(result)  # Hallucinations automatically corrected
+```
+
+### FastAPI Middleware
+
+```python
+from fastapi import FastAPI
+from guardian_agent.middleware import GuardianMiddleware
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# Add Guardian middleware
+app.add_middleware(
+    GuardianMiddleware,
+    mode="detection",
+    threshold=0.8,
+    log_hallucinations=True
+)
+
+class GenerateRequest(BaseModel):
+    prompt: str
+
+@app.post("/generate")
+async def generate(request: GenerateRequest):
+    # Your LLM logic here
+    response = your_llm.generate(request.prompt)
+    
+    # Guardian automatically checks the response
+    return {"text": response}
+```
+
+## 🛡️ Protection Modes
+
+### Detection Mode
+Monitor and log without modifying output.
+
+```python
+agent = GuardianAgent(mode="detection")
+result = agent.analyze("Your text here")
+
+# Access detailed analysis
+print(f"Hallucination regions: {result.hallucination_regions}")
+print(f"Confidence scores: {result.confidence_scores}")
+```
+
+### Correction Mode
+Automatically fix hallucinations.
+
+```python
+agent = GuardianAgent(mode="correction")
+result = agent.analyze("Napoleon was born in 1969")
+
+print(f"Original: {result.original_text}")
+print(f"Corrected: {result.corrected_text}")
+# Output: "Napoleon was born in 1769"
+```
+
+### Prevention Mode
+Block hallucination generation entirely.
+
+```python
+agent = GuardianAgent(mode="prevention")
+
+# This will prevent hallucinated content
+try:
+    result = agent.generate_safe(
+        prompt="Tell me about the iPhone 20",
+        model="gpt-4"
+    )
+except HallucinationPreventedError as e:
+    print(f"Generation blocked: {e.reason}")
+```
+
+## 📊 Batch Processing
+
+Process multiple texts efficiently:
+
+```python
+from guardian_agent import batch_detect
+
+texts = [
+    "Paris is the capital of France",
+    "The Moon is made of cheese",
+    "Water boils at 100°C at sea level",
+    "Einstein invented the internet"
+]
+
+results = batch_detect(texts)
+
+for text, result in zip(texts, results):
+    if result.is_hallucination:
+        print(f"❌ '{text[:30]}...' - Confidence: {result.confidence:.2%}")
+    else:
+        print(f"✅ '{text[:30]}...'")
+```
+
+## 🔧 Configuration
+
+### Basic Configuration
+
+```python
+from guardian_agent import GuardianAgent, Config
+
+config = Config(
+    mode="correction",
+    threshold=0.85,
+    model_specific_patterns=True,
+    semantic_analysis=True,
+    internal_state_monitoring=True,
+    max_response_time_ms=100
+)
+
+agent = GuardianAgent(config=config)
+```
+
+### Advanced Configuration
+
+```python
+# config.yaml
+guardian:
+  mode: correction
+  threshold: 0.9
+  
+  detection:
+    semantic_entropy:
+      enabled: true
+      threshold: 0.7
+    pattern_matching:
+      enabled: true
+      patterns_dir: "./custom_patterns"
+    internal_states:
+      enabled: true
+      layers: [6, 12, 18, 24]
+  
+  performance:
+    cache_enabled: true
+    cache_size: 10000
+    batch_size: 32
+    
+  logging:
+    level: INFO
+    file: guardian.log
+```
+
+Load configuration:
+
+```python
+from guardian_agent import GuardianAgent
+
+agent = GuardianAgent.from_config("config.yaml")
+```
+
+## 🎯 Custom Patterns
+
+Add your own hallucination patterns:
+
+```python
+from guardian_agent import PatternRegistry
+
+# Register a custom pattern
+PatternRegistry.register(
+    model="gpt-4",
+    pattern=r"(?i)all\s+\w+\s+are\s+\w+",
+    category="overgeneralization",
+    confidence=0.8,
+    description="Detects absolute statements"
+)
+
+# Or load from file
+PatternRegistry.load_from_file("my_patterns.yaml")
+```
+
+## 📈 Monitoring & Analytics
+
+```python
+from guardian_agent import GuardianAgent, Analytics
+
+agent = GuardianAgent(enable_analytics=True)
+
+# After processing...
+stats = agent.get_analytics()
+
+print(f"Total requests: {stats.total_requests}")
+print(f"Hallucinations detected: {stats.hallucinations_detected}")
+print(f"Average confidence: {stats.average_confidence:.2%}")
+print(f"Most common type: {stats.most_common_hallucination_type}")
+
+# Export detailed report
+stats.export_report("guardian_report.html")
+```
+
+## 🔍 Debugging
+
+Enable debug mode for detailed information:
+
+```python
+import logging
+from guardian_agent import GuardianAgent
+
+# Enable debug logging
+logging.basicConfig(level=logging.DEBUG)
+
+agent = GuardianAgent(debug=True)
+result = agent.analyze("Test text")
+
+# Access debug information
+print(result.debug_info)
+```
+
+## 💡 Best Practices
+
+1. **Choose the Right Mode**
+   - Use `detection` for monitoring and analysis
+   - Use `correction` for consumer-facing applications
+   - Use `prevention` for high-stakes scenarios
+
+2. **Tune Your Threshold**
+   - Start with 0.7 for balanced detection
+   - Increase to 0.9+ for critical applications
+   - Decrease to 0.5 for exploratory analysis
+
+3. **Model-Specific Patterns**
+   - Enable model-specific patterns for best accuracy
+   - Contribute patterns for models you use frequently
+
+4. **Performance Optimization**
+   - Use batch processing for multiple texts
+   - Enable caching for repeated queries
+   - Consider async operations for web applications
+
+## 🆘 Getting Help
+
+- 📖 [Full Documentation](https://guardian-agent.readthedocs.io)
+- 🐛 [Report Issues](https://github.com/cowboy-state-ai-solutions/guardian-agent/issues)
+- 📧 [Email Support](mailto:support@cowboystateai.com)
+
+## 🎉 Next Steps
+
+1. **Explore Examples**: Check out the `/examples` directory
+2. **Read the Docs**: Deep dive into advanced features
+3. **Join Discord**: Connect with the community
+4. **Contribute**: Add patterns for your use cases
+5. **Star the Repo**: Show your support! ⭐
+
+---
+
+Happy hallucination hunting! 🛡️✨Q
