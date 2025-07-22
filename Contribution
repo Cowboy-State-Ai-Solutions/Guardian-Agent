@@ -1,0 +1,439 @@
+# Contributing to Guardian Agent
+
+First off, thank you for considering contributing to Guardian Agent! 🎉 
+
+Guardian Agent is a community-driven project, and we welcome contributions of all kinds: from bug reports and documentation improvements to new hallucination patterns and core feature development.
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [How to Contribute](#how-to-contribute)
+- [Development Setup](#development-setup)
+- [Contributing Patterns](#contributing-patterns)
+- [Submitting Changes](#submitting-changes)
+- [Style Guidelines](#style-guidelines)
+- [Community](#community)
+
+## Code of Conduct
+
+This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to conduct@guardian-agent.ai.
+
+## Getting Started
+
+1. **Fork the repository** on GitHub
+2. **Star the repository** to show your support! ⭐
+3. **Check existing issues** to avoid duplicates
+4. **Read the documentation** to understand the project structure
+
+## How to Contribute
+
+### 🐛 Reporting Bugs
+
+Before creating bug reports, please check existing issues. When creating a bug report, include:
+
+- **Clear title and description**
+- **Steps to reproduce**
+- **Expected vs actual behavior**
+- **System information** (OS, Python version, Guardian Agent version)
+- **Relevant logs or error messages**
+
+Use the bug report template:
+
+```markdown
+**Describe the bug**
+A clear and concise description of what the bug is.
+
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Initialize Guardian Agent with '...'
+2. Run detection on '....'
+3. See error
+
+**Expected behavior**
+What you expected to happen.
+
+**Screenshots/Logs**
+If applicable, add screenshots or logs.
+
+**Environment:**
+ - OS: [e.g. Ubuntu 20.04]
+ - Python: [e.g. 3.9.7]
+ - Guardian Agent: [e.g. 1.2.3]
+```
+
+### 💡 Suggesting Features
+
+We love feature suggestions! Please:
+
+- **Check if it's already suggested** in issues or discussions
+- **Provide context**: Why is this feature needed?
+- **Be specific**: What exactly should it do?
+- **Consider implementation**: Any ideas on how it could work?
+
+### 📝 Improving Documentation
+
+Documentation improvements are always welcome! This includes:
+
+- Fixing typos or grammatical errors
+- Adding examples or clarifications
+- Translating documentation
+- Creating tutorials or guides
+
+### 🧪 Adding Tests
+
+We aim for high test coverage. When adding tests:
+
+- Write tests for new features
+- Add edge case tests
+- Improve existing test coverage
+- Ensure all tests pass before submitting
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Git
+- Virtual environment tool (venv, conda, etc.)
+
+### Local Development
+
+1. **Fork and clone the repository**
+
+```bash
+git clone https://github.com/YOUR_USERNAME/guardian-agent.git
+cd guardian-agent
+```
+
+2. **Create a virtual environment**
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. **Install in development mode**
+
+```bash
+pip install -e ".[dev]"
+```
+
+4. **Install pre-commit hooks**
+
+```bash
+pre-commit install
+```
+
+5. **Run tests to ensure everything works**
+
+```bash
+pytest
+```
+
+### Project Structure
+
+```
+guardian-agent/
+├── guardian_agent/          # Main package
+│   ├── core/               # Core detection algorithms
+│   ├── patterns/           # Hallucination patterns
+│   ├── integrations/       # Framework integrations
+│   └── utils/              # Utility functions
+├── tests/                  # Test suite
+├── docs/                   # Documentation
+├── examples/               # Example scripts
+└── benchmarks/             # Performance benchmarks
+```
+
+## Contributing Patterns
+
+One of the most valuable contributions is adding new hallucination patterns!
+
+### Pattern Format
+
+Create patterns in YAML format:
+
+```yaml
+# patterns/gpt4/medical_hallucination_001.yaml
+pattern:
+  id: "gpt4-medical-001"
+  model: "gpt-4"
+  category: "medical"
+  description: "Detects false drug interaction claims"
+  author: "@your-github-username"
+  
+  detection:
+    - type: "regex"
+      pattern: "(?i)interacts?\\s+with\\s+(all|every|any)\\s+medications?"
+      confidence: 0.85
+      
+    - type: "semantic"
+      template: "Universal drug interaction claim"
+      confidence: 0.90
+  
+  examples:
+    positive:  # These SHOULD trigger detection
+      - "This drug interacts with all other medications"
+      - "Contraindicated with every blood thinner"
+      
+    negative:  # These should NOT trigger
+      - "This drug interacts with warfarin"
+      - "May interact with certain medications"
+  
+  test_cases:
+    - input: "Aspirin interacts with all medications"
+      expected: true
+      confidence_min: 0.8
+      
+    - input: "Aspirin interacts with ibuprofen"
+      expected: false
+  
+  metadata:
+    created: "2024-01-15"
+    updated: "2024-01-15"
+    version: "1.0"
+    tags: ["medical", "drug-interactions", "safety-critical"]
+```
+
+### Testing Your Pattern
+
+```bash
+# Test a single pattern
+python -m guardian_agent.patterns.test patterns/gpt4/medical_hallucination_001.yaml
+
+# Test all patterns for a model
+python -m guardian_agent.patterns.test --model gpt-4
+
+# Validate pattern format
+python -m guardian_agent.patterns.validate patterns/gpt4/medical_hallucination_001.yaml
+```
+
+### Pattern Contribution Process
+
+1. **Create pattern file** in appropriate directory
+2. **Add comprehensive tests** with positive/negative examples
+3. **Run validation** to ensure format compliance
+4. **Test accuracy** on real examples
+5. **Submit PR** with performance metrics
+
+## Submitting Changes
+
+### Pull Request Process
+
+1. **Create a feature branch**
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+2. **Make your changes**
+   - Write clean, documented code
+   - Add tests for new functionality
+   - Update documentation as needed
+
+3. **Commit with descriptive messages**
+
+```bash
+git add .
+git commit -m "feat: add semantic validation for medical claims
+
+- Implement drug interaction detection
+- Add 15 test cases with 95% accuracy
+- Update documentation with examples"
+```
+
+4. **Run all checks**
+
+```bash
+# Run tests
+pytest
+
+# Check code style
+flake8 guardian_agent tests
+
+# Check type hints
+mypy guardian_agent
+
+# Run benchmarks if performance-related
+python -m guardian_agent.benchmark
+```
+
+5. **Push and create PR**
+
+```bash
+git push origin feature/your-feature-name
+```
+
+Then create a Pull Request on GitHub.
+
+### PR Guidelines
+
+- **Title**: Use conventional commits format (feat:, fix:, docs:, etc.)
+- **Description**: Explain what, why, and how
+- **Tests**: All tests must pass
+- **Documentation**: Update if needed
+- **Screenshots**: Include for UI changes
+
+### Commit Message Format
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation only
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding tests
+- `chore`: Maintenance tasks
+
+Example:
+```
+feat(patterns): add financial hallucination detection
+
+- Add pattern for detecting false financial statistics
+- Include 20 test cases with 97% accuracy
+- Integrate with GPT-4 and Claude models
+
+Closes #123
+```
+
+## Style Guidelines
+
+### Python Style
+
+We follow [PEP 8](https://pep8.org/) with these additions:
+
+- Line length: 100 characters
+- Use type hints for function signatures
+- Docstrings in Google style
+
+```python
+def detect_hallucination(
+    text: str,
+    model: Optional[str] = None,
+    threshold: float = 0.7
+) -> HallucinationResult:
+    """Detect hallucinations in text.
+    
+    Args:
+        text: The text to analyze.
+        model: Optional model identifier for model-specific patterns.
+        threshold: Detection threshold between 0 and 1.
+        
+    Returns:
+        HallucinationResult containing detection details.
+        
+    Raises:
+        ValueError: If threshold is not between 0 and 1.
+    """
+    if not 0 <= threshold <= 1:
+        raise ValueError(f"Threshold must be between 0 and 1, got {threshold}")
+        
+    # Implementation here
+    pass
+```
+
+### Documentation Style
+
+- Use Markdown for all documentation
+- Include code examples
+- Add diagrams where helpful
+- Keep language clear and concise
+
+## Testing Guidelines
+
+### Test Structure
+
+```python
+# tests/test_semantic_detection.py
+import pytest
+from guardian_agent import SemanticDetector
+
+class TestSemanticDetector:
+    @pytest.fixture
+    def detector(self):
+        return SemanticDetector()
+    
+    def test_detects_factual_inconsistency(self, detector):
+        """Test detection of factually inconsistent statements."""
+        text = "Paris is the capital of Germany"
+        result = detector.detect(text)
+        
+        assert result.is_hallucination
+        assert result.confidence > 0.8
+        assert "factual_error" in result.tags
+    
+    @pytest.mark.parametrize("text,expected", [
+        ("The sun is cold", True),
+        ("The sun is hot", False),
+    ])
+    def test_multiple_cases(self, detector, text, expected):
+        """Test multiple factual cases."""
+        result = detector.detect(text)
+        assert result.is_hallucination == expected
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=guardian_agent
+
+# Run specific test file
+pytest tests/test_semantic_detection.py
+
+# Run with verbose output
+pytest -v
+
+# Run only fast tests
+pytest -m "not slow"
+```
+
+## Community
+
+### Getting Help
+
+- 🗣️ **Discussions**: [GitHub Discussions](https://github.com/cowboy-state-ai-solutions/guardian-agent/discussions)
+- 📧 **Email**: community@cowboystateai.com
+
+### Recognition
+
+We believe in recognizing contributions:
+
+- **Contributors Page**: All contributors are listed
+- **Hall of Fame**: Top contributors featured
+
+### Becoming a Maintainer
+
+Active contributors who demonstrate:
+- Consistent high-quality contributions
+- Good understanding of the codebase
+- Helpful community participation
+- Commitment to the project's values
+
+May be invited to become maintainers.
+
+## Questions?
+
+Don't hesitate to ask questions! We're here to help:
+
+- Open a [Discussion](https://github.com/cowboy-state-ai-solutions/guardian-agent/discussions)
+- Email us at info@cowboystateai.com
+
+---
+
+Thank you for contributing to Guardian Agent! Together, we're making AI more reliable for everyone. 🛡️✨
